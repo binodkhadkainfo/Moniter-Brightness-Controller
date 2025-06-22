@@ -1,0 +1,98 @@
+import tkinter as tk
+import screen_brightness_control as sbc
+
+class OvalSlider(tk.Canvas):
+    def __init__(self, master, length=220, min_val=0, max_val=100, initial=50, **kwargs):
+        super().__init__(master, width=60, height=length + 40, bg="#2C3E50", highlightthickness=0, **kwargs)
+        self.length = length
+        self.min_val = min_val
+        self.max_val = max_val
+        self.current_val = initial
+
+        # Track position (vertical line)
+        self.track_x = 30
+        self.track_top = 20
+        self.track_bottom = self.track_top + self.length
+
+        # Draw track
+        self.create_line(self.track_x, self.track_top, self.track_x, self.track_bottom, width=6, fill="#34495E")
+
+        # Thumb radius
+        self.thumb_radius = 10
+
+        # Calculate initial thumb position
+        self.thumb_y = self.value_to_pos(self.current_val)
+
+        # Draw thumb (oval)
+        self.thumb = self.create_oval(
+            self.track_x - self.thumb_radius,
+            self.thumb_y - self.thumb_radius,
+            self.track_x + self.thumb_radius,
+            self.thumb_y + self.thumb_radius,
+            fill="#2980B9",
+            outline="#1F618D",
+            width=1
+        )
+
+        # Brightness label
+        self.brightness_label = tk.Label(master, text=f"{self.current_val}%", bg="#2C3E50", fg="#ECF0F1", font=("Helvetica", 16, "bold"))
+        self.brightness_label.pack(pady=(10, 0))
+
+        # Bind mouse events for dragging
+        self.bind("<Button-1>", self.click)
+        self.bind("<B1-Motion>", self.drag)
+
+        # Call brightness set initially
+        self.set_brightness(self.current_val)
+
+    def value_to_pos(self, val):
+        # Convert brightness value to y position on track (inverted)
+        ratio = (val - self.min_val) / (self.max_val - self.min_val)
+        pos = self.track_bottom - ratio * self.length
+        return pos
+
+    def pos_to_value(self, y):
+        # Convert y position on track to brightness value (inverted)
+        y = min(max(y, self.track_top), self.track_bottom)
+        ratio = (self.track_bottom - y) / self.length
+        val = self.min_val + ratio * (self.max_val - self.min_val)
+        return int(round(val))
+
+    def move_thumb(self, y):
+        # Move the thumb oval to new y position
+        y = min(max(y, self.track_top), self.track_bottom)
+        self.coords(
+            self.thumb,
+            self.track_x - self.thumb_radius,
+            y - self.thumb_radius,
+            self.track_x + self.thumb_radius,
+            y + self.thumb_radius,
+        )
+        val = self.pos_to_value(y)
+        self.current_val = val
+        self.brightness_label.config(text=f"{val}%")
+        self.set_brightness(val)
+
+    def click(self, event):
+        self.move_thumb(event.y)
+
+    def drag(self, event):
+        self.move_thumb(event.y)
+
+    def set_brightness(self, val):
+        try:
+            sbc.set_brightness(val)
+        except Exception:
+            pass  # Ignore errors silently
+
+# Main app
+root = tk.Tk()
+root.title("Brightness")
+root.geometry("100x300")
+root.configure(bg="#2C3E50")
+root.resizable(False, False)
+
+slider = OvalSlider(root, initial=50)
+slider.pack(pady=20)
+
+root.mainloop()
