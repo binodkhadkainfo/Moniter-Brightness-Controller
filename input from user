@@ -1,0 +1,34 @@
+import subprocess
+
+def get_current_brightness():
+    try:
+        output = subprocess.check_output(["ddcutil", "getvcp", "10"], stderr=subprocess.DEVNULL)
+        for line in output.decode().splitlines():
+            if "current value" in line:
+                return int(line.split("current value = ")[1].split(",")[0])
+    except:
+        return -1  # Error
+
+def set_brightness(val):
+    try:
+        brightness = int(val)
+        subprocess.run(["ddcutil", "setvcp", "10", str(brightness)], stderr=subprocess.DEVNULL)
+        print(f"Brightness set to {brightness}%")
+    except:
+        print("Failed to set brightness.")
+
+def main():
+    current = get_current_brightness()
+    if current != -1:
+        print(f"Current Brightness: {current}%")
+    else:
+        print("Could not fetch current brightness.")
+
+    user_input = input("Enter new brightness (0-100): ").strip()
+    if user_input.isdigit() and 0 <= int(user_input) <= 100:
+        set_brightness(user_input)
+    else:
+        print("Invalid input. Exiting.")
+
+if __name__ == "__main__":
+    main()
