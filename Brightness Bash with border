@@ -1,0 +1,57 @@
+get_current_brightness() {
+    output=$(ddcutil getvcp 10 2>/dev/null)
+    if [[ $? -ne 0 ]]; then
+        echo -1
+        return
+    fi
+
+    current=$(echo "$output" | grep -oP 'current value =\s*\K[0-9]+')
+    echo "$current"
+}
+
+set_brightness() {
+    brightness=$1
+    ddcutil setvcp 10 "$brightness" 2>/dev/null
+    if [[ $? -eq 0 ]]; then
+        echo "Brightness set to ${brightness}%"
+    else
+        echo "Failed to set brightness."
+    fi
+}
+
+show_progress() {
+    brightness=$1
+    (
+        i=0
+        while [ $i -le $brightness ]; do
+            echo $i
+            i=$((i + 5))
+            sleep 0.05  # ~20 steps in 1 sec
+        done
+    ) | zenity --progress \
+        --title="Brightness" \
+        --text="Brightness: $brightness%" \
+        --percentage=0 \
+        --auto-close \
+        --width=300 \
+        --no-cancel
+}
+
+main() {
+    current=$(get_current_brightness)
+
+    if [[ "$current" == "-1" || ! "$current" =~ ^[0-9]+$ ]]; then
+        echo "Could not get current brightness."
+        exit 1
+    fi
+
+    new_brightness=$((current + 5))
+    if [[ $new_brightness -gt 100 ]]; then
+        new_brightness=100
+    fi
+
+    set_brightness "$new_brightness"
+    show_progress "$new_brightness"
+}
+
+main
