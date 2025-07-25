@@ -1,3 +1,16 @@
+###########################################################################################
+sudo pacman -S ddcutil zenity
+###########################################################################################
+# Shift brightness border to the right side
+windowrulev2 = float, class:^(zenity)$
+windowrulev2 = move 87% 7%, class:^(zenity)$
+windowrulev2 = size 200 24, class:^(zenity)$
+windowrulev2 = nofocus, class:^(zenity)$
+
+##########################################################################################
+
+
+
 get_current_brightness() {
     output=$(ddcutil getvcp 10 2>/dev/null)
     if [[ $? -ne 0 ]]; then
